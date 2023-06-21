@@ -1,11 +1,15 @@
-import { Stack, StackProps } from "aws-cdk-lib";
-import { SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
+import { RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import { SecurityGroup, SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
+import { SubnetGroup } from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
 
 interface VPCStackProps extends StackProps {}
 
 export class VPCStack extends Stack {
   public readonly vpc: Vpc;
+  public readonly rdsSecurityGroup: SecurityGroup;
+  public readonly rdsPrimarySubnetGroup: SubnetGroup;
+
   constructor(scope: Construct, id: string, props?: VPCStackProps) {
     super(scope, id, props);
 
@@ -39,7 +43,29 @@ export class VPCStack extends Stack {
           subnetType: SubnetType.PRIVATE_ISOLATED,
         },
       ],
-      maxAzs: 3,
+      availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c"],
+      // maxAzs: 3
+      // Here we can not use maxAzs and AvailabilityZones together
+    });
+
+    this.vpc.applyRemovalPolicy(RemovalPolicy.DESTROY);
+
+    this.rdsPrimarySubnetGroup = new SubnetGroup(
+      this,
+      "rdsPrimaryInstanceSubnetGroup",
+      {
+        description: "rdsPrimaryInstanceSubnetGroup",
+        subnetGroupName: "rdsPrimaryInstanceSubnetGroup",
+        vpc: this.vpc,
+        vpcSubnets: {
+          subnetGroupName: "rdsTryOutDbInstance",
+        },
+      }
+    );
+
+    this.rdsSecurityGroup = new SecurityGroup(this, "rdsSecurityGroup", {
+      vpc: this.vpc,
+      securityGroupName: "rdsSecurityGroup",
     });
   }
 }
