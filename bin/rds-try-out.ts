@@ -3,6 +3,7 @@ import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { VPCStack } from "../lib/vpcStack";
 import { EC2Stack } from "../lib/ec2Stack";
+import { RDSStack } from "../lib/rdsStack";
 
 const app = new cdk.App();
 
@@ -12,12 +13,20 @@ const vpc = new VPCStack(app, "VPCStack", {
   },
 });
 
-new EC2Stack(app, "EC2Stack", {
+const ec2 = new EC2Stack(app, "EC2Stack", {
   env: {
     region: "us-east-1",
   },
   securityGroup: vpc.rdsSecurityGroup,
   vpc: vpc.vpc,
+});
+
+new RDSStack(app, "RDSStack", {
+  env: {
+    region: "us-east-1",
+  },
+  vpc: vpc.vpc,
+  jumpboxInstance: ec2.ec2,
 });
 
 // new RdsTryOutStack(app, 'RdsTryOutStack', {
